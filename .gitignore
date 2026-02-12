@@ -167,3 +167,6 @@ logs/
 
 # 社内データ（想定）はコミットしない
 data
+
+# エディター設定ファイル
+.vscode/settings.json
