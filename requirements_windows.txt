@@ -110,6 +110,7 @@ python-docx==1.1.2
 python-dotenv==1.0.1
 pytz==2024.2
 PyYAML==6.0.2
+rank-bm25==0.2.2
 referencing==0.36.2
 regex==2024.11.6
 requests==2.32.3
@@ -126,6 +127,8 @@ soupsieve==2.6
 SQLAlchemy==2.0.37
 starlette==0.45.3
 streamlit==1.41.1
+SudachiDict-full==20241021
+SudachiPy==0.6.10
 sympy==1.13.3
 tenacity==9.0.0
 tiktoken==0.8.0

@@ -21,6 +21,10 @@ from langchain_community.vectorstores import Chroma
 import constants as ct
 import utils
 
+# キーワード検索
+from langchain_community.retrievers import BM25Retriever
+# ハイブリッド検索
+from langchain.retrievers import EnsembleRetriever
 
 ############################################################
 # 設定関連
@@ -109,7 +113,7 @@ def initialize_retriever():
     # すでにRetrieverが作成済みの場合、後続の処理を中断
     if "retriever" in st.session_state:
         return
-    
+
     # RAGの参照先となるデータソースの読み込み
     docs_all = load_data_sources()
 
@@ -118,10 +122,10 @@ def initialize_retriever():
         doc.page_content = adjust_string(doc.page_content)
         for key in doc.metadata:
             doc.metadata[key] = adjust_string(doc.metadata[key])
-    
+
     # 埋め込みモデルの用意
     embeddings = OpenAIEmbeddings()
-    
+
     # チャンク分割用のオブジェクトを作成
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=ct.RAG_NUMBER_OF_CHUNK,
@@ -134,8 +138,24 @@ def initialize_retriever():
     # ベクターストアの作成
     db = Chroma.from_documents(splitted_docs, embedding=embeddings)
 
-    # ベクターストアを検索するRetrieverの作成
-    st.session_state.retriever = db.as_retriever(search_kwargs={"k": ct.RAG_NUMBER_OF_DOCS})
+    # ベクトル検索用retrieverの作成
+    vector_retriever = db.as_retriever(search_kwargs={"k": ct.RAG_NUMBER_OF_DOCS})
+
+    # キーワード検索用retrieverの作成
+    bm25_retriever = BM25Retriever.from_documents(
+        splitted_docs,
+        preprocess_func=utils.kw_search_preprocess_func,  # 単語分割用の関数
+        k=ct.RAG_NUMBER_OF_DOCS  # 関連性の高いドキュメントの抽出数
+    )
+
+    # ハイブリッド検索のretrieverの作成
+    st.session_state.retriever = EnsembleRetriever(
+        retrievers=[
+            bm25_retriever,  # キーワード検索用retriever
+            vector_retriever  # ベクトル検索用retriever
+        ],
+        weights=[0.7, 0.3]  # 検索手法の重み
+    )
 
 
 def initialize_session_state():
@@ -222,6 +242,20 @@ def file_load(path, docs_all):
         else:
             loader = ct.SUPPORTED_EXTENSIONS[file_extension](path)
         docs = loader.load()
+
+        # CSVファイルの場合、複数行にわたるデータを1行に結合
+        if file_extension == ".csv":
+            united_content = ""
+            for doc in docs:
+                united_content += doc.page_content + "\n\n"
+            docs = []
+            docs.append(
+                type(doc)(
+                    page_content=united_content,
+                    metadata=doc.metadata
+                )
+            )
+
         docs_all.extend(docs)
 
 

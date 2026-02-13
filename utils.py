@@ -15,6 +15,9 @@ from langchain.chains import create_history_aware_retriever, create_retrieval_ch
 from langchain.chains.combine_documents import create_stuff_documents_chain
 import constants as ct
 
+# 日本語解析
+# from typing import List
+from sudachipy import tokenizer, dictionary
 
 ############################################################
 # 設定関連
@@ -115,6 +118,7 @@ def get_llm_response(chat_message):
 
     return llm_response
 
+
 def get_text_file_encoding(file_path):
     """
     テキストファイルのエンコーディングを判別して取得
@@ -132,3 +136,15 @@ def get_text_file_encoding(file_path):
         char_detect = chardet.detect(content)
 
     return char_detect['encoding']
+
+
+def kw_search_preprocess_func(text):
+    """
+    テキストを引数として受け取り、単語分割した上で各単語を要素に持つリストを返します。
+    """
+    tokenizer_obj = dictionary.Dictionary(dict="full").create()
+    mode = tokenizer.Tokenizer.SplitMode.A  # トークナイザーによるテキストの分割ルール A:基本的な分割モード
+    tokens = tokenizer_obj.tokenize(text ,mode)  # 単語分割して、形態素列を返す
+    words = [token.surface() for token in tokens]  # リスト内の形態素から見出しを取り出す
+    words = list(set(words))  # 重複を除去
+    return words
