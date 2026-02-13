@@ -19,6 +19,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 import constants as ct
+import utils
 
 
 ############################################################
@@ -214,7 +215,12 @@ def file_load(path, docs_all):
     # 想定していたファイル形式の場合のみ読み込む
     if file_extension in ct.SUPPORTED_EXTENSIONS:
         # ファイルの拡張子に合ったdata loaderを使ってデータ読み込み
-        loader = ct.SUPPORTED_EXTENSIONS[file_extension](path)
+        if file_extension == ".txt" or file_extension == ".csv":
+            # テキストファイルの場合、文字コードを判定してから読み込み
+            enc = utils.get_text_file_encoding(path)
+            loader = ct.SUPPORTED_EXTENSIONS[file_extension](path, enc)
+        else:
+            loader = ct.SUPPORTED_EXTENSIONS[file_extension](path)
         docs = loader.load()
         docs_all.extend(docs)
 

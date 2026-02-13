@@ -114,3 +114,21 @@ def get_llm_response(chat_message):
     st.session_state.chat_history.extend([HumanMessage(content=chat_message), llm_response["answer"]])
 
     return llm_response
+
+def get_text_file_encoding(file_path):
+    """
+    テキストファイルのエンコーディングを判別して取得
+
+    Args:
+        file_path: テキストファイルのパス
+
+    Returns:
+        テキストファイルのエンコーディング
+    """
+    import chardet
+
+    with open(file_path, 'rb') as f:
+        content = f.read()
+        char_detect = chardet.detect(content)
+
+    return char_detect['encoding']
